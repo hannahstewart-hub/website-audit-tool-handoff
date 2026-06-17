@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { runAudit, Checklist } from "@/lib/audit";
+import { runAudit, Checklist, NotHomecareError } from "@/lib/audit";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -32,6 +32,9 @@ export async function POST(req: NextRequest) {
     const result = await runAudit(url, checklist);
     return NextResponse.json(result);
   } catch (err: unknown) {
+    if (err instanceof NotHomecareError) {
+      return NextResponse.json({ error: err.message }, { status: 422 });
+    }
     const msg = err instanceof Error ? err.message : "Unknown error";
     return NextResponse.json(
       {

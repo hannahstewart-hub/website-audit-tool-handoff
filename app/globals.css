@@ -61,8 +61,10 @@ h1, h2, h3, h4 { font-family: var(--font-hero); margin: 0; color: var(--birdie-n
 .bk { font-family: var(--font-body); color: var(--birdie-navy); -webkit-font-smoothing: antialiased; }
 .bk *, .bk *::before, .bk *::after { box-sizing: border-box; }
 
-/* ---- Eyebrow ---- */
-.bk-eyebrow { font-family: var(--font-body); font-weight: 600; font-size: 12px; letter-spacing: 0.12em; text-transform: uppercase; }
+/* ---- Eyebrow ----
+   Birdie brand guide: sentence case only. No uppercase shouts. We keep the
+   widened letter-spacing for the eyebrow rhythm but drop text-transform. */
+.bk-eyebrow { font-family: var(--font-body); font-weight: 600; font-size: 12.5px; letter-spacing: 0.06em; }
 .bk-eyebrow--teal { color: var(--birdie-teal); }
 .bk-eyebrow--mint { color: var(--birdie-mint); }
 .bk-eyebrow--navy { color: var(--birdie-navy-75); }

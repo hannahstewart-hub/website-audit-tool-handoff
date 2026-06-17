@@ -250,6 +250,23 @@ function urlsMatching(pages: FetchedPage[], parts: string[]): FetchedPage[] {
   return pages.filter((p) => lower.some((n) => p.url.toLowerCase().includes(n)));
 }
 
+// Words and phrases that indicate this is a UK homecare agency site.
+// Used to refuse non-homecare sites before producing a score.
+const HOMECARE_RELEVANCE_TERMS = [
+  "home care", "homecare", "domiciliary care", "live-in care",
+  "live in care", "respite care", "personal care",
+  "care at home", "care visits", "carer", "caregiver",
+  "cqc", "care quality commission",
+  "dementia care", "palliative care", "elderly care",
+];
+
+export class NotHomecareError extends Error {
+  constructor() {
+    super("This doesn't look like a UK homecare agency website. The audit is built for UK homecare providers — try a site that offers personal care, live-in care, domiciliary care, or similar.");
+    this.name = "NotHomecareError";
+  }
+}
+
 export async function runAudit(
   inputUrl: string,
   checklist: Checklist
@@ -258,6 +275,15 @@ export async function runAudit(
   const pages = await crawlSite(startUrl);
   const home = pages[0];
   const $ = home.$;
+
+  // Relevance gate — before scoring, confirm this looks like a homecare site.
+  // Aggregate text across all crawled pages so single-keyword false-negatives
+  // are rare. Require at least one strong term anywhere on the site.
+  const allText = pages.map((p) => p.text.toLowerCase()).join(" ");
+  const matchedRelevance = HOMECARE_RELEVANCE_TERMS.some((t) => allText.includes(t));
+  if (!matchedRelevance) {
+    throw new NotHomecareError();
+  }
 
   // Homepage-scoped signals
   const title = ($("title").first().text() || "").trim();

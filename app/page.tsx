@@ -16,7 +16,7 @@ const CHECKLIST_QUESTIONS: { key: keyof Checklist; label: string; help: string }
   { key: "pricingVisible", label: "Are your prices or a price guide shown anywhere?", help: "Even a 'from £X/hour' builds trust with private payers." },
   { key: "recentPrivateTestimonials", label: "Do you show real reviews or testimonials from families?", help: "Social proof is the single biggest driver of enquiries." },
   { key: "clearCtaAboveFold", label: "Is there an obvious way to enquire on every page?", help: "Phone number, form or chat, visible without scrolling." },
-  { key: "publishesCoverageAreas", label: "Have you published your latest CQC rating?", help: "Families check this. Hiding it costs you credibility." },
+  { key: "publishesCoverageAreas", label: "Have you published the towns or postcodes you cover?", help: "Families search for care in their area. Listing your coverage helps them, and helps local SEO." },
 ];
 
 function ragFromScore(score: number): Rag {
@@ -49,15 +49,16 @@ function today() {
    PAGE
    ============================================================================ */
 export default function Page() {
-  const [stage, setStage] = useState<Stage>("hero");
-  const [url, setUrl] = useState("oakwoodhomecare.co.uk");
-  const [checklist, setChecklist] = useState<Checklist>({
-    hasPrivatePage: true,
+  const defaultChecklist: Checklist = {
+    hasPrivatePage: false,
     pricingVisible: false,
-    recentPrivateTestimonials: true,
+    recentPrivateTestimonials: false,
     clearCtaAboveFold: false,
     publishesCoverageAreas: false,
-  });
+  };
+  const [stage, setStage] = useState<Stage>("hero");
+  const [url, setUrl] = useState("");
+  const [checklist, setChecklist] = useState<Checklist>(defaultChecklist);
   const [result, setResult] = useState<AuditResult | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -87,6 +88,8 @@ export default function Page() {
     setStage("hero");
     setResult(null);
     setError(null);
+    setUrl("");
+    setChecklist(defaultChecklist);
   }
 
   if (stage === "hero") {
@@ -317,6 +320,7 @@ function Hero({
         <div className="bk-eyebrow bk-eyebrow--teal" style={{ marginBottom: 14 }}>
           For UK homecare agency owners
         </div>
+        {/* (Eyebrow renders in sentence case — Birdie brand rule, no uppercase.) */}
         <h1
           style={{
             fontSize: "clamp(34px, 6vw, 48px)",
@@ -584,9 +588,20 @@ function LeadGate({
     [result],
   );
 
+  // Count actual actionable fixes (findings with a 'fix' field). The lead-gate
+  // teaser used to hardcode "12 specific fixes" — now it reflects reality.
+  const fixCount = useMemo(
+    () =>
+      result.categories.reduce(
+        (n, c) => n + c.findings.filter((f) => f.fix).length,
+        0,
+      ),
+    [result],
+  );
+
   const inside: [string, string, string][] = [
     ["flag", "Your weakest category", `Right now that is ${weakest.name.toLowerCase()}.`],
-    ["spark", "12 specific fixes", "Ranked by impact, tagged quick win or dev needed."],
+    ["spark", `${fixCount} specific ${fixCount === 1 ? "fix" : "fixes"}`, "Ranked by impact, tagged quick win or dev needed."],
     ["download", "A shareable PDF", "Hand it straight to your web person."],
   ];
 
@@ -663,7 +678,7 @@ function LeadGate({
             Your report is ready
           </h2>
           <p style={{ fontSize: 15, color: "var(--birdie-navy-75)", lineHeight: 1.55, margin: "0 0 22px" }}>
-            We audited <b style={{ color: NAVY }}>{normUrl(result.url)}</b> across 6 categories. Here is what unlocks when you continue:
+            We audited <b style={{ color: NAVY }}>{normUrl(result.url)}</b> across 6 categories. Here's what's in the full report:
           </p>
           {inside.map(([ic, t, d]) => (
             <div key={t} style={{ display: "flex", gap: 13, marginBottom: 15 }}>
