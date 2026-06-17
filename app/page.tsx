@@ -313,7 +313,13 @@ function Hero({
   error: string | null;
 }) {
   const [touched, setTouched] = useState(false);
-  const valid = normUrl(url).includes(".");
+  // Separate "empty" from "malformed" so we can show a tailored message for
+  // each (the previous unified message confused users who'd typed nothing).
+  // normUrl falls back to a placeholder when empty, so it can't be used here.
+  const trimmedUrl = url.trim();
+  const isEmpty = trimmedUrl.length === 0;
+  const looksValid = trimmedUrl.includes(".") && !/\s/.test(trimmedUrl);
+  const valid = !isEmpty && looksValid;
   // When the URL changes (user typing), clear the format-error display so the
   // old red text disappears the moment they start correcting it.
   useEffect(() => {
@@ -369,7 +375,9 @@ function Hero({
             />
           </div>
           {touched && !valid && (
-            <div style={{ color: RED, fontSize: 12.5, marginTop: 7 }}>Please enter a valid website address.</div>
+            <div style={{ color: RED, fontSize: 12.5, marginTop: 7 }}>
+              {isEmpty ? "Please enter your website address." : "Please enter a valid website address."}
+            </div>
           )}
           {error && (
             <div
