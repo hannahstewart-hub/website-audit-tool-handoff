@@ -80,6 +80,38 @@ const TESTIMONIAL_HINTS = [
   "google reviews",
 ];
 const CQC_HINTS = ["cqc", "care quality commission", "regulated by"];
+
+/**
+ * Detect CQC references on a page. Cheerio's `text()` strips <script> tags
+ * entirely, so any site embedding the official CQC widget (very common —
+ * e.g. profadcareagency.co.uk) goes undetected if we only check body text.
+ * Check, in priority order:
+ *   1. body text for CQC / Care Quality Commission / regulated by
+ *   2. raw HTML for cqc.org.uk (script src, link href, etc.) or the
+ *      cqc-widget CSS class
+ *   3. any <img> alt or src containing "cqc" (covers self-hosted badges)
+ *   4. any <a> href containing "cqc.org.uk"
+ */
+function pageMentionsCqc(p: FetchedPage): boolean {
+  const text = p.text.toLowerCase();
+  if (CQC_HINTS.some((n) => text.includes(n))) return true;
+  const html = p.html.toLowerCase();
+  if (html.includes("cqc.org.uk") || html.includes("cqc-widget")) return true;
+  let imgMatch = false;
+  p.$("img").each((_, el) => {
+    const $el = p.$(el);
+    const alt = ($el.attr("alt") || "").toLowerCase();
+    const src = ($el.attr("src") || "").toLowerCase();
+    if (alt.includes("cqc") || src.includes("cqc")) imgMatch = true;
+  });
+  if (imgMatch) return true;
+  let linkMatch = false;
+  p.$('a[href]').each((_, el) => {
+    const href = (p.$(el).attr("href") || "").toLowerCase();
+    if (href.includes("cqc.org.uk")) linkMatch = true;
+  });
+  return linkMatch;
+}
 const UK_POSTCODE_RX = /\b[A-Z]{1,2}\d[A-Z\d]?\s*\d[A-Z]{2}\b/i;
 const UK_PHONE_RX = /(?:\+44\s?|0)(?:\d\s?){9,10}/;
 
@@ -316,7 +348,7 @@ export async function runAudit(
   const pagesWithPricing = pagesMatching(pages, PRICING_HINTS);
   const mentionsPricing = pagesWithPricing.length > 0;
   const mentionsTestimonials = anyTextHas(pages, TESTIMONIAL_HINTS);
-  const mentionsCqc = anyTextHas(pages, CQC_HINTS);
+  const mentionsCqc = pages.some(pageMentionsCqc);
   const privateSpecificPages = urlsMatching(pages, [
     "private",
     "self-fund",
