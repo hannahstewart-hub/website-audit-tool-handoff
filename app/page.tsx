@@ -344,12 +344,25 @@ function Hero({
             fontSize: "clamp(34px, 6vw, 48px)",
             lineHeight: 1.1,
             letterSpacing: "-0.02em",
-            margin: "0 0 16px",
+            margin: "0 0 14px",
             fontWeight: 700,
           }}
         >
-          Is your website <span style={{ color: ORANGE }}>actually winning</span> private clients?
+          The homecare website grader
         </h1>
+        <p
+          style={{
+            fontSize: "clamp(20px, 2.6vw, 24px)",
+            lineHeight: 1.25,
+            letterSpacing: "-0.01em",
+            margin: "0 0 16px",
+            fontWeight: 500,
+            color: "var(--birdie-navy)",
+            fontFamily: "var(--font-hero)",
+          }}
+        >
+          Is your website <span style={{ color: ORANGE }}>actually winning</span> private clients?
+        </p>
         <p
           style={{
             fontSize: 17,
