@@ -402,18 +402,61 @@ h1, h2, h3, h4 { font-family: var(--font-hero); margin: 0; color: var(--birdie-n
 
 /* ==========================================================================
    Print / PDF
+   The on-screen Report is also the printable artefact — print CSS reshapes
+   it for A4 (compact spacing, hide chrome, force RAG colours, prevent
+   page-breaks inside cards).
    ========================================================================== */
 .print-only { display: none; }
 @media print {
   @page { size: A4; margin: 14mm; }
-  html, body { background: #fff !important; }
+  html, body {
+    background: #fff !important;
+    font-size: 10pt;
+    line-height: 1.4;
+  }
   [data-no-print] { display: none !important; }
   .stage-in { animation: none !important; }
+  /* Force RAG / brand colours to render in the PDF — browsers strip backgrounds
+     by default in print. */
   * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
   .print-only { display: flex !important; }
-  .print-head { align-items: center; justify-content: space-between; padding-bottom: 10px; margin-bottom: 6px; border-bottom: 1.5px solid var(--birdie-navy); }
-  .audit-navy { border-radius: 12px; margin-top: 6px; }
-  .report-card { break-inside: avoid; }
-  .bk-card { box-shadow: none !important; border: 1px solid var(--border-soft) !important; }
+  .print-head {
+    align-items: center;
+    justify-content: space-between;
+    padding-bottom: 10px;
+    margin-bottom: 8px;
+    border-bottom: 1.5px solid var(--birdie-navy);
+  }
+  .audit-navy {
+    border-radius: 12px;
+    margin-top: 6px;
+    padding: 24px 22px !important;
+  }
+  .audit-navy h2 { font-size: 18pt !important; }
+  .audit-navy p  { font-size: 9.5pt !important; }
+  .report-card { break-inside: avoid; page-break-inside: avoid; margin-bottom: 8px; }
+  .bk-card {
+    box-shadow: none !important;
+    border: 1px solid var(--border-soft) !important;
+    padding: 14px 16px !important;
+  }
+  /* Category cards: compact head, tighter findings */
+  .bk-cat__name { font-size: 13pt !important; }
+  .bk-cat__blurb { font-size: 9pt !important; }
+  .bk-scorebadge { font-size: 22pt !important; }
+  .bk-finding { padding: 10px 0 !important; }
+  .bk-finding__label { font-size: 10pt !important; }
+  .bk-finding__detail { font-size: 9pt !important; }
+  /* Hide interactive controls — toggles, buttons, expand/collapse — in print */
+  .bk-howto-btn, .bk-howto { display: none !important; }
+  /* Mini score chips at top — keep colour but tighten */
+  .mh-mini { gap: 6px !important; }
+  .bk-mini__name { font-size: 7.5pt !important; }
+  .bk-mini__score { font-size: 18pt !important; }
+  /* Tag pills: keep visible */
+  .bk-tag, .bk-status-pill { font-size: 7.5pt !important; }
+  /* Fix box: keep blue tint, smaller */
+  .bk-fix { padding: 8px 10px !important; font-size: 9pt !important; }
+  /* Outer layout */
   .audit-app > div { padding-left: 0 !important; padding-right: 0 !important; }
 }

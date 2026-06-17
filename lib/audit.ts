@@ -602,7 +602,6 @@ export async function runAudit(
           fix: "Add a descriptive <title>: it's the first thing shown in Google and tabs.",
           easyWin: true,
           howTo: "In your CMS, go to your homepage settings and look for 'SEO title', 'Page title' or 'Meta title'. Add something like 'Homecare in [Your Town] | [Agency Name]'. In WordPress, install the free Yoast SEO plugin. It makes this easy.",
-          techHelp: true,
         }
   );
   clarityFindings.push(
@@ -706,8 +705,7 @@ export async function runAudit(
           detail: "Number shown but not tappable.",
           fix: 'Wrap your number in a <a href="tel:..."> link for one-tap calling on mobile.',
           easyWin: true,
-          howTo: 'Ask your web developer to wrap your phone number in a tel: link. It\'s one line of HTML: <a href="tel:01234567890">01234 567890</a>. If you edit your own site in Wix or Squarespace, select your phone number text and add a link. Set the URL as "tel:YOURNUMBER" (no spaces). Takes 2 minutes.',
-          techHelp: true,
+          howTo: 'In Wix or Squarespace, select your phone number text and add a link. Set the URL as "tel:YOURNUMBER" (no spaces between digits). Takes 2 minutes. If your site is custom-coded, your developer can wrap the number in <a href="tel:01234567890">01234 567890</a>.',
         }
       : {
           id: "co-telclick",

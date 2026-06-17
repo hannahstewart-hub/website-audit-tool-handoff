@@ -627,7 +627,14 @@ function LeadGate({
   // number_of_crs is required by HubSpot. Allow integers only; treat empty/0 as missing.
   const crsNum = Number(f.crs);
   const crsOk = Number.isInteger(crsNum) && crsNum > 0;
-  const formOk = f.first.trim() && emailOk && crsOk && consent;
+  // HubSpot's form has firstname, lastname, email, jobtitle, company, number_of_crs
+  // all as required. Mirror that in the UI so users see field-level errors
+  // BEFORE submission rather than a raw HubSpot error after.
+  const firstOk = !!f.first.trim();
+  const lastOk = !!f.last.trim();
+  const titleOk = !!f.title.trim();
+  const agencyOk = !!f.agency.trim();
+  const formOk = firstOk && lastOk && emailOk && titleOk && agencyOk && crsOk && consent;
 
   async function submit() {
     setTouched(true);
@@ -640,11 +647,11 @@ function LeadGate({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           fields: [
-            { name: "firstname", value: f.first },
-            { name: "lastname", value: f.last },
-            { name: "email", value: f.email },
-            { name: "jobtitle", value: f.title },
-            { name: "company", value: f.agency },
+            { name: "firstname", value: f.first.trim() },
+            { name: "lastname", value: f.last.trim() },
+            { name: "email", value: f.email.trim() },
+            { name: "jobtitle", value: f.title.trim() },
+            { name: "company", value: f.agency.trim() },
             { name: "website", value: result.url },
             { name: "number_of_crs", value: String(crsNum) },
           ],
@@ -662,20 +669,18 @@ function LeadGate({
           },
         }),
       });
-      // HubSpot returns 200 with { inlineMessage } on success, or 400 with
-      // { errors: [...] } if fields fail validation. We unlock either way
-      // if the email looked valid — but show any HubSpot error message.
       if (!res.ok) {
-        const data: { message?: string; errors?: { message: string }[] } = await res
-          .json()
-          .catch(() => ({}));
-        const msg = data.errors?.[0]?.message || data.message || "Submission failed. Try again?";
-        setErr(msg);
+        // HubSpot returns raw, internal field names ("Required field 'company' is
+        // missing") on validation failure. Never leak those to users — show a
+        // single friendly message. Our client-side validation should have caught
+        // this anyway, so getting here means an unexpected HubSpot config change
+        // or a network/server issue.
+        setErr("Something went wrong sending your details. Please check the form and try again.");
         return;
       }
       onUnlock();
     } catch {
-      setErr("Submission failed. Check your connection and try again.");
+      setErr("Something went wrong sending your details. Check your connection and try again.");
     } finally {
       setSubmitting(false);
     }
@@ -739,17 +744,17 @@ function LeadGate({
               HubSpot's embed scripts render inside a cross-origin iframe
               that can't be styled by the parent page. */}
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 14 }}>
-            <NativeField label="First name" ph="Jane" value={f.first} onChange={set("first")} err={touched && !f.first.trim()} required />
-            <NativeField label="Last name" ph="Okafor" value={f.last} onChange={set("last")} />
+            <NativeField label="First name" ph="Jane" value={f.first} onChange={set("first")} err={touched && !firstOk} required />
+            <NativeField label="Last name" ph="Okafor" value={f.last} onChange={set("last")} err={touched && !lastOk} required />
           </div>
           <div style={{ marginBottom: 14 }}>
             <NativeField label="Work email" ph="jane@oakwoodhomecare.co.uk" type="email" value={f.email} onChange={set("email")} err={touched && !emailOk} required />
           </div>
           <div style={{ marginBottom: 14 }}>
-            <NativeField label="Job title" ph="Registered Manager" value={f.title} onChange={set("title")} />
+            <NativeField label="Job title" ph="Registered Manager" value={f.title} onChange={set("title")} err={touched && !titleOk} required />
           </div>
           <div style={{ marginBottom: 14 }}>
-            <NativeField label="Agency name" ph="Oakwood Home Care" value={f.agency} onChange={set("agency")} />
+            <NativeField label="Agency name" ph="Oakwood Home Care" value={f.agency} onChange={set("agency")} err={touched && !agencyOk} required />
           </div>
           <div style={{ marginBottom: 18 }}>
             <NativeField
@@ -1010,7 +1015,12 @@ function NextStep({ result }: { result: AuditResult }) {
           <p style={{ fontSize: 13.5, color: "rgba(255,255,255,0.7)", lineHeight: 1.5, margin: "8px 0 16px" }}>
             Most fixes in this report are quick wins you can do without a developer. Work down the list, top to bottom.
           </p>
-          <button className="bk-btn bk-btn--hollow-w bk-btn--sm" onClick={() => window.print()}>
+          <button className="bk-btn bk-btn--hollow-w bk-btn--sm" onClick={() => {
+            // Defer print so the browser paints the (re-styled) page before the
+            // synchronous print dialog blocks. Without this, the dialog can fire
+            // mid-render and leave the tab unresponsive on some browsers.
+            requestAnimationFrame(() => setTimeout(() => window.print(), 0));
+          }}>
             Download the checklist
           </button>
         </div>
@@ -1088,7 +1098,12 @@ function Report({ result, onBack }: { result: AuditResult; onBack: () => void })
               Download a PDF to keep, print or hand to your web person.
             </div>
           </div>
-          <button className="bk-btn bk-btn--navy" onClick={() => window.print()}>
+          <button className="bk-btn bk-btn--navy" onClick={() => {
+            // Defer print so the browser paints the (re-styled) page before the
+            // synchronous print dialog blocks. Without this, the dialog can fire
+            // mid-render and leave the tab unresponsive on some browsers.
+            requestAnimationFrame(() => setTimeout(() => window.print(), 0));
+          }}>
             <Icon name="download" size={16} stroke={2} /> Download as PDF
           </button>
         </div>
