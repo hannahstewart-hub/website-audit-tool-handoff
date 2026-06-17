@@ -93,10 +93,17 @@ export default function Page() {
   }
 
   if (stage === "hero") {
+    // Wrap setUrl so any keystroke clears the previous API error — prevents
+    // stacking ("Please enter a valid website address" plus a stale "not a
+    // homecare site" message from the prior submit).
+    const handleUrlChange = (v: string) => {
+      setUrl(v);
+      if (error) setError(null);
+    };
     return (
       <Hero
         url={url}
-        setUrl={setUrl}
+        setUrl={handleUrlChange}
         checklist={checklist}
         setChecklist={setChecklist}
         onRun={runAudit}
@@ -307,6 +314,11 @@ function Hero({
 }) {
   const [touched, setTouched] = useState(false);
   const valid = normUrl(url).includes(".");
+  // When the URL changes (user typing), clear the format-error display so the
+  // old red text disappears the moment they start correcting it.
+  useEffect(() => {
+    setTouched(false);
+  }, [url]);
   return (
     <div className="bk stage-in" style={{ minHeight: "100vh", background: "var(--audit-bg)" }}>
       <Header />
@@ -605,13 +617,17 @@ function LeadGate({
     ["download", "A shareable PDF", "Hand it straight to your web person."],
   ];
 
-  const [f, setF] = useState({ first: "", last: "", email: "", title: "", agency: "" });
+  const [f, setF] = useState({ first: "", last: "", email: "", title: "", agency: "", crs: "" });
+  const [consent, setConsent] = useState(false);
   const [touched, setTouched] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [err, setErr] = useState<string | null>(null);
   const set = (k: keyof typeof f) => (v: string) => setF((o) => ({ ...o, [k]: v }));
   const emailOk = /.+@.+\..+/.test(f.email);
-  const formOk = f.first.trim() && emailOk;
+  // number_of_crs is required by HubSpot. Allow integers only; treat empty/0 as missing.
+  const crsNum = Number(f.crs);
+  const crsOk = Number.isInteger(crsNum) && crsNum > 0;
+  const formOk = f.first.trim() && emailOk && crsOk && consent;
 
   async function submit() {
     setTouched(true);
@@ -630,10 +646,19 @@ function LeadGate({
             { name: "jobtitle", value: f.title },
             { name: "company", value: f.agency },
             { name: "website", value: result.url },
+            { name: "number_of_crs", value: String(crsNum) },
           ],
           context: {
             pageUri: window.location.href,
             pageName: document.title,
+          },
+          // GDPR consent — recorded in HubSpot's legalConsentOptions block.
+          // Lawful basis owner should confirm wording / policy version.
+          legalConsentOptions: {
+            consent: {
+              consentToProcess: true,
+              text: "I agree to allow Birdie to store and process my personal data so they can contact me about my audit results and Birdie products.",
+            },
           },
         }),
       });
@@ -723,16 +748,53 @@ function LeadGate({
           <div style={{ marginBottom: 14 }}>
             <NativeField label="Job title" ph="Registered Manager" value={f.title} onChange={set("title")} />
           </div>
-          <div style={{ marginBottom: 18 }}>
+          <div style={{ marginBottom: 14 }}>
             <NativeField label="Agency name" ph="Oakwood Home Care" value={f.agency} onChange={set("agency")} />
           </div>
+          <div style={{ marginBottom: 18 }}>
+            <NativeField
+              label="Number of clients you support"
+              ph="e.g. 45"
+              type="number"
+              value={f.crs}
+              onChange={set("crs")}
+              err={touched && !crsOk}
+              required
+            />
+          </div>
+          {/* GDPR consent — explicit, unticked by default. HubSpot lawful-basis
+              owner should confirm copy + policy version before launch. */}
+          <div
+            className="bk-check"
+            data-on={consent ? "1" : "0"}
+            style={{ cursor: "pointer", padding: "12px 0", borderTop: "1px solid var(--border-soft)" }}
+            onClick={() => setConsent((c) => !c)}
+            role="checkbox"
+            aria-checked={consent}
+            tabIndex={0}
+            onKeyDown={(e) => {
+              if (e.key === " " || e.key === "Enter") {
+                e.preventDefault();
+                setConsent((c) => !c);
+              }
+            }}
+          >
+            <span className="bk-check__box"><Icon name="check" size={14} stroke={3} /></span>
+            <div className="bk-check__label" style={{ fontWeight: 500, fontSize: 13, lineHeight: 1.45 }}>
+              I agree to allow Birdie to store and process my personal data so they can contact me about my audit results and Birdie products.
+            </div>
+          </div>
+          {touched && !consent && (
+            <div style={{ color: RED, fontSize: 12.5, marginTop: 4 }}>Please tick the consent box to continue.</div>
+          )}
           {err && (
-            <div style={{ color: RED, fontSize: 13, marginBottom: 10 }} role="alert">{err}</div>
+            <div style={{ color: RED, fontSize: 13, marginTop: 10, marginBottom: 4 }} role="alert">{err}</div>
           )}
           <button
             className="bk-btn bk-btn--orange bk-btn--lg bk-btn--block"
             disabled={submitting}
             onClick={submit}
+            style={{ marginTop: 14 }}
           >
             {submitting ? "Sending…" : "Show me my results"}
           </button>
