@@ -1021,44 +1021,53 @@ function NextStep({ result }: { result: AuditResult }) {
       >
         Start with {weakest.name.toLowerCase()}
       </h3>
-      <div className="ns-grid" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
-        <div
+      {/* Single mint feature card focused entirely on the Private-Pay Hub.
+          Previously this row had a second "Fix it yourself" card alongside it;
+          dropped because the report itself already lists every fix, and the
+          navy-on-navy treatment looked weak in print. */}
+      <div style={{ background: MINT, borderRadius: 14, padding: 28 }}>
+        <div style={{ fontFamily: "var(--font-hero)", fontWeight: 600, fontSize: 19, color: NAVY }}>
+          See how Birdie helps you win private clients
+        </div>
+        <p style={{ fontSize: 14, color: NAVY, opacity: 0.85, lineHeight: 1.55, margin: "8px 0 18px" }}>
+          The Birdie Private-Pay Hub gives you tools and content to act on this report:
+        </p>
+        <ul
           style={{
-            background: "rgba(255,255,255,0.06)",
-            border: "1px solid rgba(255,255,255,0.1)",
-            borderRadius: 14,
-            padding: 22,
+            listStyle: "none",
+            padding: 0,
+            margin: "0 0 22px",
+            display: "grid",
+            gap: 10,
           }}
         >
-          <div style={{ fontFamily: "var(--font-hero)", fontWeight: 600, fontSize: 17, color: "#fff" }}>
-            Fix it yourself
-          </div>
-          <p style={{ fontSize: 13.5, color: "rgba(255,255,255,0.7)", lineHeight: 1.5, margin: "8px 0 16px" }}>
-            Most fixes in this report are quick wins you can do without a developer. Work down the list, top to bottom.
-          </p>
-          <button className="bk-btn bk-btn--hollow-w bk-btn--sm" onClick={() => {
-            // Defer print so the browser paints the (re-styled) page before the
-            // synchronous print dialog blocks. Without this, the dialog can fire
-            // mid-render and leave the tab unresponsive on some browsers.
-            requestAnimationFrame(() => setTimeout(() => window.print(), 0));
-          }}>
-            Download the checklist
-          </button>
-        </div>
-        <div style={{ background: MINT, borderRadius: 14, padding: 22 }}>
-          <div style={{ fontFamily: "var(--font-hero)", fontWeight: 600, fontSize: 17, color: NAVY }}>
-            See how Birdie helps
-          </div>
-          <p style={{ fontSize: 13.5, color: NAVY, opacity: 0.8, lineHeight: 1.5, margin: "8px 0 16px" }}>
-            Birdie helps care agencies evidence quality and win more private clients with less admin.
-          </p>
-          <button
-            className="bk-btn bk-btn--navy bk-btn--sm"
-            onClick={() => window.open("https://www.birdie.care/private-pay-hub", "_blank")}
-          >
-            Visit the private-pay hub <Icon name="arrow-right" size={16} stroke={2} />
-          </button>
-        </div>
+          {[
+            ["Rates calculator", "Work out what to charge private clients in your area."],
+            ["Interactive growth map", "See where private demand is highest near you."],
+            ["Webinar series", "Practical sessions on winning and keeping private clients."],
+          ].map(([title, blurb]) => (
+            <li key={title} style={{ display: "flex", gap: 11, alignItems: "flex-start" }}>
+              <span
+                style={{
+                  width: 18, height: 18, borderRadius: 9, background: NAVY,
+                  display: "grid", placeItems: "center", flex: "0 0 auto", marginTop: 2,
+                }}
+              >
+                <Icon name="check" size={12} stroke={3} color={MINT} />
+              </span>
+              <div>
+                <span style={{ fontWeight: 600, fontSize: 14, color: NAVY }}>{title}</span>
+                <span style={{ fontSize: 13.5, color: NAVY, opacity: 0.75, marginLeft: 6 }}>{blurb}</span>
+              </div>
+            </li>
+          ))}
+        </ul>
+        <button
+          className="bk-btn bk-btn--navy"
+          onClick={() => window.open("https://www.birdie.care/private-pay-hub", "_blank")}
+        >
+          Visit the Private-Pay Hub <Icon name="arrow-right" size={16} stroke={2} />
+        </button>
       </div>
     </div>
   );
