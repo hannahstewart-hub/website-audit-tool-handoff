@@ -250,14 +250,28 @@ function urlsMatching(pages: FetchedPage[], parts: string[]): FetchedPage[] {
   return pages.filter((p) => lower.some((n) => p.url.toLowerCase().includes(n)));
 }
 
-// Words and phrases that indicate this is a UK homecare agency site.
-// Used to refuse non-homecare sites before producing a score.
-const HOMECARE_RELEVANCE_TERMS = [
-  "home care", "homecare", "domiciliary care", "live-in care",
-  "live in care", "respite care", "personal care",
-  "care at home", "care visits", "carer", "caregiver",
-  "cqc", "care quality commission",
-  "dementia care", "palliative care", "elderly care",
+// Phrases that identify a UK homecare-agency site. We only match these against
+// the HOMEPAGE's <title>, <meta description>, and <h1> — i.e. what the site
+// says it's about, not what it happens to mention. Aggregating across all body
+// text is unreliable because news sites (e.g. bbc.co.uk) and council pages
+// mention "homecare", "carer", "personal care" etc. in passing.
+const HOMECARE_IDENTITY_TERMS = [
+  "homecare",
+  "home care",
+  "home-care",
+  "domiciliary care",
+  "live-in care",
+  "live in care",
+  "respite care",
+  "personal care",
+  "care at home",
+  "care services",
+  "care agency",
+  "care company",
+  "elderly care",
+  "dementia care",
+  "private care",
+  "carer",
 ];
 
 export class NotHomecareError extends Error {
@@ -276,12 +290,15 @@ export async function runAudit(
   const home = pages[0];
   const $ = home.$;
 
-  // Relevance gate — before scoring, confirm this looks like a homecare site.
-  // Aggregate text across all crawled pages so single-keyword false-negatives
-  // are rare. Require at least one strong term anywhere on the site.
-  const allText = pages.map((p) => p.text.toLowerCase()).join(" ");
-  const matchedRelevance = HOMECARE_RELEVANCE_TERMS.some((t) => allText.includes(t));
-  if (!matchedRelevance) {
+  // Relevance gate — before scoring, confirm this is actually a homecare site.
+  // Only inspect homepage identifiers (title / meta description / h1), not body
+  // content, so news sites that mention "carer" in passing get refused.
+  const homeTitle = ($("title").first().text() || "").toLowerCase();
+  const homeDesc = ($('meta[name="description"]').attr("content") || "").toLowerCase();
+  const homeH1 = ($("h1").first().text() || "").toLowerCase();
+  const identityText = `${homeTitle} ${homeDesc} ${homeH1}`;
+  const matchedIdentity = HOMECARE_IDENTITY_TERMS.some((t) => identityText.includes(t));
+  if (!matchedIdentity) {
     throw new NotHomecareError();
   }
 
