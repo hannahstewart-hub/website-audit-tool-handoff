@@ -1005,8 +1005,50 @@ function CategoryCardView({ cat }: { cat: CategoryReport }) {
   );
 }
 
+// All three Private-Pay Hub resources. Order in the list is chosen by
+// resourceOrderByCategory below, picking which one leads based on the user's
+// weakest audit category.
+const RESOURCES = {
+  rates: { title: "Rates calculator", blurb: "Work out what to charge private clients in your area." },
+  map: { title: "Interactive growth map", blurb: "See where private demand is highest near you." },
+  webinar: { title: "Webinar series", blurb: "Practical sessions on winning and keeping private clients." },
+} as const;
+type ResourceKey = keyof typeof RESOURCES;
+
+// Map weakest-category key to the resource that helps most with that gap.
+// The first key listed leads; the others trail in a sensible default order.
+const RESOURCE_ORDER_BY_CATEGORY: Record<string, ResourceKey[]> = {
+  private: ["rates", "webinar", "map"],
+  trust:   ["rates", "webinar", "map"],
+  services: ["webinar", "rates", "map"],
+  clarity:  ["webinar", "rates", "map"],
+  contact:  ["map", "webinar", "rates"],
+  mobile:   ["map", "rates", "webinar"],
+};
+
+// Score-band copy. The headline + intro inside the mint card adapt to the
+// user's overall score band — congratulations for green, action for amber,
+// reassurance for red.
+const NEXT_STEP_COPY: Record<"green" | "amber" | "red", { heading: string; intro: string }> = {
+  green: {
+    heading: "You're already winning private clients",
+    intro: "Use the Private-Pay Hub to benchmark your rates against your area and find the next pocket of demand.",
+  },
+  amber: {
+    heading: "Close the gaps — win more enquiries",
+    intro: "Birdie's Private-Pay Hub gives you the tools to act on this report — no agency needed.",
+  },
+  red: {
+    heading: "Build your private-pay foundations",
+    intro: "Start with the basics. The Private-Pay Hub walks you through it, step by step.",
+  },
+};
+
 function NextStep({ result }: { result: AuditResult }) {
   const weakest = [...result.categories].sort((a, b) => a.score - b.score)[0];
+  const band = ragFromScore(result.overallScore);
+  const copy = NEXT_STEP_COPY[band];
+  const order = RESOURCE_ORDER_BY_CATEGORY[weakest.key] || (["rates", "map", "webinar"] as ResourceKey[]);
   return (
     <div style={{ background: NAVY, borderRadius: "var(--radius-lg)", padding: 32 }}>
       <div className="bk-eyebrow bk-eyebrow--mint">Your next step</div>
@@ -1021,16 +1063,15 @@ function NextStep({ result }: { result: AuditResult }) {
       >
         Start with {weakest.name.toLowerCase()}
       </h3>
-      {/* Single mint feature card focused entirely on the Private-Pay Hub.
-          Previously this row had a second "Fix it yourself" card alongside it;
-          dropped because the report itself already lists every fix, and the
-          navy-on-navy treatment looked weak in print. */}
+      {/* Single mint feature card. Headline + intro adapt by score band;
+          resource order is reshuffled so the most relevant tool leads based
+          on the weakest audit category. */}
       <div style={{ background: MINT, borderRadius: 14, padding: 28 }}>
         <div style={{ fontFamily: "var(--font-hero)", fontWeight: 600, fontSize: 19, color: NAVY }}>
-          See how Birdie helps you win private clients
+          {copy.heading}
         </div>
         <p style={{ fontSize: 14, color: NAVY, opacity: 0.85, lineHeight: 1.55, margin: "8px 0 18px" }}>
-          The Birdie Private-Pay Hub gives you tools and content to act on this report:
+          {copy.intro}
         </p>
         <ul
           style={{
@@ -1041,26 +1082,25 @@ function NextStep({ result }: { result: AuditResult }) {
             gap: 10,
           }}
         >
-          {[
-            ["Rates calculator", "Work out what to charge private clients in your area."],
-            ["Interactive growth map", "See where private demand is highest near you."],
-            ["Webinar series", "Practical sessions on winning and keeping private clients."],
-          ].map(([title, blurb]) => (
-            <li key={title} style={{ display: "flex", gap: 11, alignItems: "flex-start" }}>
-              <span
-                style={{
-                  width: 18, height: 18, borderRadius: 9, background: NAVY,
-                  display: "grid", placeItems: "center", flex: "0 0 auto", marginTop: 2,
-                }}
-              >
-                <Icon name="check" size={12} stroke={3} color={MINT} />
-              </span>
-              <div>
-                <span style={{ fontWeight: 600, fontSize: 14, color: NAVY }}>{title}</span>
-                <span style={{ fontSize: 13.5, color: NAVY, opacity: 0.75, marginLeft: 6 }}>{blurb}</span>
-              </div>
-            </li>
-          ))}
+          {order.map((key) => {
+            const { title, blurb } = RESOURCES[key];
+            return (
+              <li key={key} style={{ display: "flex", gap: 11, alignItems: "flex-start" }}>
+                <span
+                  style={{
+                    width: 18, height: 18, borderRadius: 9, background: NAVY,
+                    display: "grid", placeItems: "center", flex: "0 0 auto", marginTop: 2,
+                  }}
+                >
+                  <Icon name="check" size={12} stroke={3} color={MINT} />
+                </span>
+                <div>
+                  <span style={{ fontWeight: 600, fontSize: 14, color: NAVY }}>{title}</span>
+                  <span style={{ fontSize: 13.5, color: NAVY, opacity: 0.75, marginLeft: 6 }}>{blurb}</span>
+                </div>
+              </li>
+            );
+          })}
         </ul>
         <button
           className="bk-btn bk-btn--navy"
